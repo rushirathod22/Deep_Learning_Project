@@ -1,6 +1,10 @@
 // ─── E-Commerce Trust & Verification App Data ───────────────────────────────
 
-export const EXAMPLES = []
+export const EXAMPLES = [
+  'Adidas Ultraboost shoes are available for ₹3,499 instead of ₹15,999. Only 2 minutes remaining! Payment must be completed immediately to secure the offer.',
+  'Nike Air Force 1 is ₹1,999 on this website, ₹11,895 on official Nike. Seller has 12 reviews with 2.3 stars. Only 2 pairs left in stock. No physical address or customer support phone number provided. Return processing fee is ₹1,499.',
+  'AirPods Pro 2 for $29 are genuine Apple liquidation stock with valid serial numbers and 1-year warranty.'
+]
 
 export const SOURCES_DB = {
   'airpods pro 2 for $29 are genuine apple': [

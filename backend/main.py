@@ -2,7 +2,20 @@ import sys
 import os
 import shutil
 import tempfile
+import traceback
 from pathlib import Path
+
+if sys.stdout and hasattr(sys.stdout, 'reconfigure'):
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+    except Exception:
+        pass
+if sys.stderr and hasattr(sys.stderr, 'reconfigure'):
+    try:
+        sys.stderr.reconfigure(encoding='utf-8')
+    except Exception:
+        pass
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Form
@@ -43,6 +56,9 @@ class VerifyMultiRequest(BaseModel):
     agent_output: str
     context: Dict[str, Any]
 
+class ScanUrlRequest(BaseModel):
+    url: str
+
 # ── Original single-claim endpoint (backward compatible) ──────────────
 @app.post("/verify")
 def verify_claim(req: VerifyRequest, db: Session = Depends(get_db)):
@@ -65,6 +81,7 @@ def verify_claim(req: VerifyRequest, db: Session = Depends(get_db)):
         
         return result
     except Exception as e:
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Internal Server Error: {str(e)}")
 
 # ── Multi-claim verification (text input) ─────────────────────────────
@@ -268,6 +285,101 @@ def preview_claims(req: VerifyMultiRequest):
         "extracted_claims": claims,
         "count": len(claims),
     }
+
+# ── Dynamic URL Scanning ──────────────────────────────────────────────
+@app.post("/scan-url")
+def scan_url_endpoint(req: ScanUrlRequest):
+    """
+    Dynamically scan any product or article URL.
+    Extracts real title, description, price, and creates a clean claim.
+    """
+    try:
+        from retrieval.url_scanner import scrape_url_claim
+        res = scrape_url_claim(req.url)
+        return res
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Failed to scan URL: {str(e)}")
+
+# ── Dynamic Image Detection & Visual Verification ─────────────────────
+@app.post("/detect-image")
+async def detect_image_endpoint(file: UploadFile = File(...)):
+    """Run zero-shot CLIP classification on uploaded image to extract product claim."""
+    tmp_dir = tempfile.mkdtemp()
+    tmp_path = os.path.join(tmp_dir, file.filename)
+    try:
+        with open(tmp_path, "wb") as f:
+            content = await file.read()
+            f.write(content)
+        import importlib
+        import models.image_verifier.verifier as img_verifier
+        importlib.reload(img_verifier)
+        detection = img_verifier.detect_product_from_image(tmp_path)
+        return detection
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Image detection error: {str(e)}")
+    finally:
+        shutil.rmtree(tmp_dir, ignore_errors=True)
+
+@app.post("/verify/image")
+async def verify_image_endpoint(
+    file: UploadFile = File(...),
+    claim: Optional[str] = Form(""),
+    db: Session = Depends(get_db)
+):
+    """
+    Accept an uploaded image, dynamically classify or verify claim with CLIP + OCR,
+    and run through the full verification pipeline with multi-modal visual evidence.
+    """
+    tmp_dir = tempfile.mkdtemp()
+    tmp_path = os.path.join(tmp_dir, file.filename)
+    try:
+        with open(tmp_path, "wb") as f:
+            content = await file.read()
+            f.write(content)
+            
+        import importlib
+        import models.image_verifier.verifier as img_verifier
+        importlib.reload(img_verifier)
+        detection = img_verifier.detect_product_from_image(tmp_path)
+        
+        final_claim = claim.strip() if claim and claim.strip() else detection.get("suggested_claim", "Authentic product listing")
+        
+        context = {
+            "unit": "",
+            "visually_verifiable": True,
+            "source_reliability": 0.8,
+            "action_risk": 0.5,
+            "image_path": tmp_path
+        }
+        
+        result = run_pipeline(
+            claim_text=final_claim,
+            context=context
+        )
+        result["detected_product"] = detection.get("label")
+        result["detection_confidence"] = detection.get("confidence")
+        result["visual_verified"] = True
+        
+        record = models.VerificationRecord(
+            claim=f"[Image: {file.filename}] {final_claim}",
+            context_data=context,
+            trust_score=result["trust_score"],
+            decision=result["decision"],
+            explanation=result["explanation"],
+            claims_output=result.get("claims", [])
+        )
+        db.add(record)
+        db.commit()
+        db.refresh(record)
+        
+        return result
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Image verification error: {str(e)}")
+    finally:
+        shutil.rmtree(tmp_dir, ignore_errors=True)
 
 @app.get("/history")
 def get_history(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):

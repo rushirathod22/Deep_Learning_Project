@@ -1,8 +1,8 @@
 import re
 
 # Common currency symbols and codes for auto-detection
-_CURRENCY_SYMBOLS = r"[\$£€₹¥₩]"
-_CURRENCY_CODES = r"(?:USD|EUR|GBP|INR|JPY|CAD|AUD|KRW)"
+_CURRENCY_SYMBOLS = r"(?:[\$£€₹¥₩]|Rs\.?|INR)"
+_CURRENCY_CODES = r"(?:USD|EUR|GBP|INR|JPY|CAD|AUD|KRW|Rs\.?)"
 
 def extract_number_with_unit(text: str, unit: str):
     """Extract a number anchored to a specific unit string."""

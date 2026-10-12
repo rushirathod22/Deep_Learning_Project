@@ -457,20 +457,20 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 
 /* ─── Dashboard Layout ──────────────────────────────────────────────────── */
 .dashboard-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 380px;
-  gap: 28px;
-  max-width: 1480px;
+  display: flex;
+  flex-direction: column;
+  max-width: 1140px;
   margin: 0 auto;
   padding: 28px 32px 48px;
   width: 100%;
 }
 
-.primary-column, .insight-column {
+.primary-column {
   display: flex;
   min-width: 0;
   flex-direction: column;
   gap: 24px;
+  width: 100%;
 }
 
 .panel {
@@ -2939,7 +2939,6 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 /* ─── Responsive Media Queries ──────────────────────────────────────────── */
 @media (min-width: 1540px) {
   .dashboard-layout {
-    grid-template-columns: minmax(0, 1fr) 420px;
     padding-right: 48px;
     padding-left: 48px;
   }
@@ -2947,7 +2946,6 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 
 @media (max-width: 1200px) {
   .dashboard-layout {
-    grid-template-columns: minmax(0, 1fr) 340px;
     padding-right: 20px;
     padding-left: 20px;
     gap: 20px;
@@ -3054,3 +3052,416 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .verification-body > section:nth-child(2) { animation-delay: 0.2s; }
 .verification-body > section:nth-child(3) { animation-delay: 0.3s; }
 .verification-body > section:nth-child(4) { animation-delay: 0.4s; }
+
+/* ─── Claims Breakdown & Granular Audit Section ───────────────────────────── */
+.claims-breakdown-section {
+  margin-top: 24px;
+  padding-top: 22px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.claims-breakdown-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.claims-breakdown-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #17233a;
+}
+
+.claims-breakdown-title h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: #0f172a;
+}
+
+.claims-summary-badges {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.summary-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 4px 11px;
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  line-height: 1;
+}
+
+.summary-pill.pill-verified {
+  background: #f0fdf4;
+  color: #166534;
+  border-color: #bbf7d0;
+}
+
+.summary-pill.pill-unverified {
+  background: #fffbeb;
+  color: #b45309;
+  border-color: #fde68a;
+}
+
+.summary-pill.pill-highrisk {
+  background: #fef2f2;
+  color: #b91c1c;
+  border-color: #fecaca;
+}
+
+.summary-pill.pill-contradicted {
+  background: #fff1f2;
+  color: #be123c;
+  border-color: #fecdd3;
+}
+
+.claims-table {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.claim-card-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px 18px;
+  border-radius: 10px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-left-width: 5px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.claim-card-row:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.claim-card-row.status-verified {
+  border-left-color: #16a34a;
+  background: #fcfffc;
+}
+
+.claim-card-row.status-unverified {
+  border-left-color: #f59e0b;
+  background: #fffdfa;
+}
+
+.claim-card-row.status-highrisk {
+  border-left-color: #dc2626;
+  background: #fffbfa;
+}
+
+.claim-card-row.status-contradicted {
+  border-left-color: #e11d48;
+  background: #fff9fa;
+}
+
+.claim-icon-col {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #f8fafc;
+  font-size: 1.15rem;
+  line-height: 1;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.status-verified .claim-icon-col {
+  background: #dcfce7;
+}
+
+.status-unverified .claim-icon-col {
+  background: #fef3c7;
+}
+
+.status-highrisk .claim-icon-col {
+  background: #fee2e2;
+}
+
+.status-contradicted .claim-icon-col {
+  background: #ffe4e6;
+}
+
+.claim-main-col {
+  flex: 1;
+  min-width: 0;
+}
+
+.claim-tags-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
+
+.claim-type-pill {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+
+.claim-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 9px;
+  border-radius: 9999px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+}
+
+.claim-badge.status-verified {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.claim-badge.status-unverified {
+  background: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+
+.claim-badge.status-highrisk {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+.claim-badge.status-contradicted {
+  background: #ffe4e6;
+  color: #be123c;
+  border: 1px solid #fecdd3;
+}
+
+.claim-text {
+  font-size: 0.95rem;
+  color: #0f172a;
+  line-height: 1.45;
+  margin-bottom: 5px;
+}
+
+.claim-text strong {
+  font-weight: 600;
+}
+
+.claim-evidence-text {
+  display: inline-block;
+  font-size: 0.82rem;
+  color: #475569;
+  line-height: 1.4;
+  background: #f8fafc;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px dashed #cbd5e1;
+  margin-top: 4px;
+  width: 100%;
+}
+
+.evidence-label {
+  font-weight: 700;
+  color: #334155;
+  margin-right: 4px;
+}
+
+.advisory-box {
+  margin-top: 18px;
+  padding: 15px 20px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #fef2f2, #fff5f5);
+  border: 1px solid #fecaca;
+  color: #991b1b;
+  box-shadow: 0 1px 3px rgba(220, 38, 38, 0.06);
+}
+
+.advisory-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.92rem;
+  margin-bottom: 6px;
+  font-weight: 700;
+  color: #991b1b;
+}
+
+.advisory-box p {
+  margin: 0;
+  font-size: 0.86rem;
+  line-height: 1.5;
+  color: #7f1d1d;
+}
+
+/* ─── Canonical Audit Banner & Stances ───────────────────────────────────────── */
+.canonical-claim-banner {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-left: 4px solid #3b82f6;
+  border-radius: 8px;
+  padding: 14px 18px;
+  margin-bottom: 16px;
+}
+
+.canonical-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.canonical-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  background: #dbeafe;
+  color: #1e40af;
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+.canonical-sku {
+  font-size: 0.72rem;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: monospace;
+}
+
+.canonical-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  font-size: 0.84rem;
+  color: #475569;
+}
+
+.canonical-grid div span {
+  display: block;
+  font-size: 0.72rem;
+  color: #64748b;
+  text-transform: uppercase;
+}
+
+.stance-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 2px 7px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  margin-left: 6px;
+}
+
+.stance-direct_support {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.stance-partial_support {
+  background: #dbeafe;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+.stance-context {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+
+.stance-user_claim {
+  background: #fef9c3;
+  color: #854d0e;
+  border: 1px solid #fef08a;
+}
+
+.stance-direct_contradiction {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fca5a5;
+}
+
+.status-user_provided {
+  background: #fffbeb;
+  color: #b45309;
+  border-color: #fde68a;
+}
+
+.status-not_established {
+  background: #f8fafc;
+  color: #64748b;
+  border-color: #cbd5e1;
+}
+
+/* ─── Grouped Evidence Cards ────────────────────────────────────────────────── */
+.grouped-evidence-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 14px;
+}
+
+.grouped-category-block {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 14px 16px;
+}
+
+.grouped-cat-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 10px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.grouped-item-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+  border-left: 3px solid #3b82f6;
+  background: #f8fafc;
+  border-radius: 0 6px 6px 0;
+  margin-bottom: 8px;
+  font-size: 0.82rem;
+}
+
+.grouped-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px;
+}

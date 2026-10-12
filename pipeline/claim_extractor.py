@@ -38,28 +38,26 @@ def _get_nlp():
 
 
 # ---------------------------------------------------------------------------
-# Known product entities (from seed data)
+# Open-Domain Product Entity Recognition (spaCy NER & Noun Chunks)
 # ---------------------------------------------------------------------------
-_KNOWN_ENTITIES = None
 
+def _has_product_entity(sentence: str) -> bool:
+    """Check if the sentence mentions any product entity, brand, or model name dynamically."""
+    nlp = _get_nlp()
+    if nlp is not None:
+        doc = nlp(sentence)
+        for ent in doc.ents:
+            if ent.label_ in ("ORG", "PRODUCT", "WORK_OF_ART", "PERSON") and len(ent.text.strip()) >= 2:
+                return True
+        for chunk in doc.noun_chunks:
+            words = [w for w in chunk.text.split() if len(w) >= 2 and (w[0].isupper() or any(c.isdigit() for c in w))]
+            if words:
+                return True
 
-def _get_known_entities() -> set:
-    """Load product entity names from seed data for matching."""
-    global _KNOWN_ENTITIES
-    if _KNOWN_ENTITIES is None:
-        try:
-            from trustagent.data.generator.seed_data import data as seed_data
-            _KNOWN_ENTITIES = set()
-            for product in seed_data:
-                name = product["entity"]
-                _KNOWN_ENTITIES.add(name.lower())
-                # Also add individual significant words (e.g. "GameStation" from "GameStation X1")
-                for word in name.split():
-                    if len(word) > 2 and not word.isdigit():
-                        _KNOWN_ENTITIES.add(word.lower())
-        except ImportError:
-            _KNOWN_ENTITIES = set()
-    return _KNOWN_ENTITIES
+    # Fallback: check for capitalized words or alphanumeric model identifiers
+    tokens = sentence.split()
+    capitalized = [t for t in tokens if len(t) >= 2 and t[0].isupper() and t.lower() not in ("the", "this", "that", "there", "here", "it", "in", "on", "for", "and", "or", "only", "we", "they", "is", "are")]
+    return len(capitalized) >= 1
 
 
 # ---------------------------------------------------------------------------
@@ -84,10 +82,12 @@ _ATTRIBUTE_KEYWORDS = {
     "flight time", "response time",
     "fuel economy", "mpg",
     "waterproof", "water resistance",
+    "discount", "offer", "sale", "genuine", "authentic", "original",
+    "warranty", "stock", "reviews", "rating", "stars", "fee"
 }
 
 _UNIT_PATTERNS = re.compile(
-    r'\b(?:USD|\$|usd|hours?|days?|minutes?|grams?|kg|GB|TB|mAh|inches?|'
+    r'\b(?:USD|\$|usd|inr|rs\.?|₹|hours?|days?|minutes?|grams?|kg|GB|TB|mAh|inches?|'
     r'watts?|kWh|miles?|hp|mpg|MP|Pa|cu\s*ft|sq\s*ft|mm|dB|Hz|ms|bars?|'
     r'levels?|liters?|meters?|degrees?|percent|K)\b',
     re.IGNORECASE,
@@ -97,15 +97,6 @@ _UNIT_PATTERNS = re.compile(
 def _has_number(text: str) -> bool:
     """Check if text contains a number (integer or decimal)."""
     return bool(re.search(r'\d+(?:\.\d+)?', text))
-
-
-def _mentions_product(text: str, known_entities: set) -> bool:
-    """Check if any known product entity is mentioned."""
-    text_lower = text.lower()
-    for entity in known_entities:
-        if entity in text_lower:
-            return True
-    return False
 
 
 def _has_attribute_keyword(text: str) -> bool:
@@ -122,17 +113,16 @@ def _has_unit(text: str) -> bool:
     return bool(_UNIT_PATTERNS.search(text))
 
 
-def _is_verifiable_claim(sentence: str, known_entities: set) -> bool:
+def _is_verifiable_claim(sentence: str) -> bool:
     """
-    Heuristic: a sentence is a verifiable claim if it:
-    1. Mentions a known product entity, AND
-    2. Contains a number or color reference, AND
-    3. Contains an attribute keyword or unit of measurement
+    Open-domain claim verification check:
+    A sentence is a verifiable claim if it has a product/subject entity AND
+    asserts a number, unit, color, or verifiable attribute.
     """
-    if len(sentence.split()) < 4:
-        return False  # Too short to be a meaningful claim
+    if len(sentence.split()) < 3:
+        return False
 
-    mentions_entity = _mentions_product(sentence, known_entities)
+    has_entity = _has_product_entity(sentence)
     has_number_or_color = _has_number(sentence) or any(
         c in sentence.lower() for c in [
             "black", "white", "silver", "gray", "red", "blue",
@@ -142,7 +132,7 @@ def _is_verifiable_claim(sentence: str, known_entities: set) -> bool:
     )
     has_attr = _has_attribute_keyword(sentence) or _has_unit(sentence)
 
-    return mentions_entity and has_number_or_color and has_attr
+    return has_entity and (has_number_or_color or has_attr)
 
 
 # ---------------------------------------------------------------------------
@@ -204,8 +194,6 @@ def extract_claims(text: str) -> List[str]:
         # Fallback: regex-based sentence splitting
         sentences = re.split(r'(?<=[.!?])\s+', text)
 
-    known_entities = _get_known_entities()
-
     # Further split long sentences on conjunctions (and, also, while, etc.)
     # This handles: "It is priced at 499 USD and comes with 1 TB of storage."
     expanded_sentences = []
@@ -228,13 +216,12 @@ def extract_claims(text: str) -> List[str]:
         sent = sent.strip()
         if not sent or sent in seen:
             continue
-        if _is_verifiable_claim(sent, known_entities):
+        if _is_verifiable_claim(sent):
             claims.append(sent)
             seen.add(sent)
 
-    # If no claims were extracted but text mentions a known product,
-    # treat the whole text as a single claim (user probably typed one claim)
-    if not claims and _mentions_product(text, known_entities):
+    # If no strict claims were extracted, treat the whole text as a single claim
+    if not claims and len(text.split()) >= 2:
         claims = [text]
 
     return claims
