@@ -158,8 +158,10 @@ cd Deep_Learning_Project
 
 # Create and activate a virtual environment
 python -m venv venv
+
 # On Windows:
 .\venv\Scripts\activate
+
 # On Linux/macOS:
 source venv/bin/activate
 
